@@ -18,26 +18,32 @@ class GoogleTranslateDriver implements TranslationDriver
     public function translate(array $texts, string $sourceLang, string $targetLang): array
     {
         $apiKey = $this->config['api_key'];
-        $joinedTexts = implode("\n", array_values($texts));
-        $params = [
-            'q' => $joinedTexts,
+
+        $body = [
+            'q' => array_values($texts),
             'source' => $sourceLang,
             'target' => $targetLang,
-            'key' => $apiKey,
             'format' => 'text',
         ];
 
-        $response = Http::asForm()->post('https://translation.googleapis.com/language/translate/v2', $params);
+        $response = Http::asJson()->post(
+            'https://translation.googleapis.com/language/translate/v2?key=' . urlencode($apiKey),
+            $body
+        );
+
         if (!$response->successful()) {
             $error = $response->json()['error']['message'] ?? $response->body();
             throw new Exception('Google Translate API error: ' . $error);
         }
 
-        $translatedArray = explode("\n", $response->json()['data']['translations'][0]['translatedText']);
-        if (count($translatedArray) !== count($texts)) {
+        $translations = collect($response->json('data.translations'))
+            ->pluck('translatedText')
+            ->toArray();
+
+        if (count($translations) !== count($texts)) {
             throw new Exception('Mismatch in number of translated texts returned by Google Translate.');
         }
 
-        return array_combine(array_keys($texts), $translatedArray);
+        return array_combine(array_keys($texts), $translations);
     }
 }
