@@ -24,10 +24,11 @@ class GoogleTranslateDriver implements TranslationDriver
             'source' => $sourceLang,
             'target' => $targetLang,
             'format' => 'text',
+            'key' => $apiKey,
         ];
 
         $response = Http::asJson()->post(
-            'https://translation.googleapis.com/language/translate/v2?key=' . urlencode($apiKey),
+            'https://translation.googleapis.com/language/translate/v2',
             $body
         );
 
